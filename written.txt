@@ -7,3 +7,8 @@ Q4. What happens with reset (rebuild every frame) instead?
     Circles that have drifted apart now group with closer circles.
 
 Q5. Why are some circles drawn with their sides cut off?
+    I do not see circles with their sides cut off, but I anticipated that it would be due to either:
+        1. Circles drawn at edge of the window do not complete their shape, as their restricted position 
+        in the window does not factor their radius extending beyond the border, or
+        2. Circles that span a bounding box for a separate branch may be cutoff by the box
+    I will have to assume that option 1 it the intended meaning.
