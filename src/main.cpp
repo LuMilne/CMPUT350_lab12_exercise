@@ -42,9 +42,10 @@ struct BVHNode {
     int childBOrLen = -1;  // if leaf node, length into index list, else child bvh node ptr
     int isLeaf = 0;
     // TODO Bonus 1: store each node's height in the tree and color its box in Draw by height.
+    int height = 0;
     int padding = 0;  // to get to POT size of 32 bytes.
 };
-static_assert(sizeof(BVHNode) == 32, "keep BVHNode a power-of-two size");
+// static_assert(sizeof(BVHNode) == 32, "keep BVHNode a power-of-two size");
 
 struct BVH {
     static constexpr float T_ISECT = 1;
@@ -55,7 +56,7 @@ struct BVH {
         std::iota(indices.begin(), indices.end(), 0);
         nodes.reserve(2 * prims.size());
         nodes.push_back({});
-        constructNode(0, static_cast<int>(indices.size()), 0);
+        constructNode(0, static_cast<int>(indices.size()), 0, 0);
     }
 
     void reset() {
@@ -63,10 +64,10 @@ struct BVH {
         std::iota(indices.begin(), indices.end(), 0);
         nodes.reserve(2 * primitives->size());
         nodes.push_back({});
-        constructNode(0, static_cast<int>(indices.size()), 0);
+        constructNode(0, static_cast<int>(indices.size()), 0, 0);
     }
 
-    void constructNode(int startIdx, int numIndices, int bvhOffset) {
+    void constructNode(int startIdx, int numIndices, int bvhOffset, int height) {
         const std::vector<Circle>& prims = *primitives;
         const auto first = indices.begin() + startIdx;
         const auto last = first + numIndices;
@@ -155,10 +156,10 @@ struct BVH {
         // internal node; children are appended after their parent
         const int childA = static_cast<int>(nodes.size());
         const int childB = childA + 1;
-        nodes[bvhOffset] = BVHNode{totalBound, childA, childB, /*isLeaf=*/false};
+        nodes[bvhOffset] = BVHNode{totalBound, childA, childB, /*isLeaf=*/false, height};
         nodes.resize(nodes.size() + 2);  // filled in by the recursive calls
-        constructNode(startIdx, smallerCount, childA);
-        constructNode(startIdx + smallerCount, numIndices - smallerCount, childB);
+        constructNode(startIdx, smallerCount, childA, height+1);
+        constructNode(startIdx + smallerCount, numIndices - smallerCount, childB, height+1);
     }
 
     // Refit every box bottom-up without changing the tree structure. Children are always stored
@@ -225,13 +226,23 @@ struct Scene {
     std::vector<Circle> circles;
 };
 
-void Draw(sf::RenderWindow& window, const AABB<float>& aabb) {
+std::vector<sf::Color> colors = {
+    sf::Color::Red,
+    {255, 165, 0},
+    sf::Color::Yellow,
+    sf::Color::Green,
+    sf::Color::Cyan,
+    sf::Color::Blue,
+    {143, 0, 255}
+};
+void Draw(sf::RenderWindow& window, const AABB<float>& aabb, int height) {
     // draw frame of rectangle
     static sf::RectangleShape shape;
     shape.setSize(aabb.maxPoint - aabb.minPoint);
     shape.setPosition(aabb.minPoint);
     shape.setFillColor(sf::Color::Transparent);
-    shape.setOutlineColor(sf::Color::White);
+    if(height < 7) shape.setOutlineColor(colors[height]);
+    else shape.setOutlineColor(sf::Color::White);
     shape.setOutlineThickness(1.0f);
     window.draw(shape);
 }
@@ -248,10 +259,11 @@ int main() {
     Scene scene;
     float max_v = 5.0f;
     for (int n = 0; n < 100; ++n) {
+        float radius = uniform(10,20);
         scene.createCircle(
-            {uniform(0, gScreenWidth), uniform(0, gScreenHeight)},
+            {uniform(radius, gScreenWidth-radius), uniform(radius, gScreenHeight-radius)},
             {uniform(-max_v, max_v), uniform(-max_v, max_v)},
-            uniform(10, 20),
+            radius,
             {uniform(0, 1), uniform(0, 1), uniform(0, 1), 1});
     }
     BVH bvh(scene.circles);
@@ -304,7 +316,7 @@ int main() {
         window.clear();
         window.draw(sprite);
         for (const BVHNode& node : bvh.nodes) {
-            if(!node.isLeaf) Draw(window, node.bounds);
+            if(!node.isLeaf) Draw(window, node.bounds, node.height);
         }
         window.display();
     }

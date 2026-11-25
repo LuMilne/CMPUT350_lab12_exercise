@@ -12,3 +12,13 @@ Q5. Why are some circles drawn with their sides cut off?
         in the window does not factor their radius extending beyond the border, or
         2. Circles that span a bounding box for a separate branch may be cutoff by the box
     I will have to assume that option 1 it the intended meaning.
+
+Bonus 1.
+    Height = 0 starts with Red and proceeds along ROYGBIV as depth increases.
+    Depth might be a better term but oh well.
+    Height > 6 defaults to white
+
+Bonus 2.
+    Going off of assumptions from Q5, generated radus before drawing each circle and added margins 
+    to starting position. Still capable of drifting out of window, but never back in, so new edges
+    are never revealed.
