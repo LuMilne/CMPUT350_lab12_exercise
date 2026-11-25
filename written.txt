@@ -19,6 +19,6 @@ Bonus 1.
     Height > 6 defaults to white
 
 Bonus 2.
-    Going off of assumptions from Q5, generated radus before drawing each circle and added margins 
+    Going off of assumptions from Q5, generated radius before drawing each circle and added margins 
     to starting position. Still capable of drifting out of window, but never back in, so new edges
     are never revealed.
