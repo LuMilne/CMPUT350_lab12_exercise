@@ -258,20 +258,33 @@ int main() {
                 const sf::Vector2f pixel(static_cast<float>(x), static_cast<float>(y));
                 // TODO Q2: antialiasing. Take four samples at offsets of +-0.3333 from the pixel
                 // and average their colors.
+                std::vector<sf::Vector2f> offsets = {
+                    {0.3333f, 0.3333f},
+                    {0.3333f, -0.3333f},
+                    {-0.3333f, 0.3333f},
+                    {-0.3333f, -0.3333f}
+                };
                 Vector4f color{};  // stays transparent black on a miss
-                intersects(pixel, bvh.nodes[0], bvh, color);
+                for(const auto& offset: offsets) {
+                    // Get point at offset
+                    auto pix = pixel + offset;
+                    Vector4f sample{};
+                    intersects(pix, bvh.nodes[0], bvh, sample);
+                    // All opaque, so simplify averaging
+                    color += sample;
+                }
+                // intersects(pixel, bvh.nodes[0], bvh, color);
                 const std::size_t i = 4 * (static_cast<std::size_t>(y) * gScreenWidth + x);
-                pixels[i + 0] = static_cast<std::uint8_t>(255 * color.x);  // R
-                pixels[i + 1] = static_cast<std::uint8_t>(255 * color.y);  // G
-                pixels[i + 2] = static_cast<std::uint8_t>(255 * color.z);  // B
-                pixels[i + 3] = static_cast<std::uint8_t>(255 * color.w);  // A
+                pixels[i + 0] = static_cast<std::uint8_t>(255 * color.x / 4);  // R
+                pixels[i + 1] = static_cast<std::uint8_t>(255 * color.y / 4);  // G
+                pixels[i + 2] = static_cast<std::uint8_t>(255 * color.z / 4);  // B
+                pixels[i + 3] = static_cast<std::uint8_t>(255 * color.w / 4);  // A
             }
         }
         texture.update(pixels.data());
 
         window.clear();
         window.draw(sprite);
-        // TODO Q1: only draw non-leaf nodes so the BVH structure is easier to see.
         for (const BVHNode& node : bvh.nodes) {
             if(!node.isLeaf) Draw(window, node.bounds);
         }
