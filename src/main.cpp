@@ -28,7 +28,10 @@ struct Circle {
 
     constexpr AABB<float> bounds() const { return {position - radius, position + radius}; }
 
+    void update() { position += velocity; }
+
     sf::Vector2f position;
+    sf::Vector2f velocity;
     float radius;
     Vector4f color;
 };
@@ -55,7 +58,13 @@ struct BVH {
         constructNode(0, static_cast<int>(indices.size()), 0);
     }
 
-    // TODO Q4: write a reset() function that rebuilds the tree instead of refitting it.
+    void reset() {
+        nodes.clear();
+        std::iota(indices.begin(), indices.end(), 0);
+        nodes.reserve(2 * primitives->size());
+        nodes.push_back({});
+        constructNode(0, static_cast<int>(indices.size()), 0);
+    }
 
     void constructNode(int startIdx, int numIndices, int bvhOffset) {
         const std::vector<Circle>& prims = *primitives;
@@ -193,11 +202,9 @@ bool intersects(sf::Vector2f point, const BVHNode& node, const BVH& bvh, Vector4
 }
 
 // SOA layout for easy buffering
-// TODO Q3: store a 2D movement direction for each circle, and write an update() function that
-// moves every circle by its movement.
 struct Scene {
-    std::size_t createCircle(sf::Vector2f position, float radius, const Vector4f& color) {
-        circles.push_back({position, radius, color});
+    std::size_t createCircle(sf::Vector2f position, sf::Vector2f velocity, float radius, const Vector4f& color) {
+        circles.push_back({position, velocity, radius, color});
         return circles.size() - 1;
     }
 
@@ -207,6 +214,13 @@ struct Scene {
     }
 
     bool valid(std::size_t i) const { return i < circles.size(); }
+
+    // Call to update position by velocity for  each circle
+    void updateScene() {
+        for(auto& circle: circles) {
+            circle.update();
+        }
+    }
 
     std::vector<Circle> circles;
 };
@@ -232,9 +246,13 @@ int main() {
         return std::uniform_real_distribution<float>(lo, hi)(rng);
     };
     Scene scene;
+    float max_v = 5.0f;
     for (int n = 0; n < 100; ++n) {
-        scene.createCircle({uniform(0, gScreenWidth), uniform(0, gScreenHeight)}, uniform(10, 20),
-                           {uniform(0, 1), uniform(0, 1), uniform(0, 1), 1});
+        scene.createCircle(
+            {uniform(0, gScreenWidth), uniform(0, gScreenHeight)},
+            {uniform(-max_v, max_v), uniform(-max_v, max_v)},
+            uniform(10, 20),
+            {uniform(0, 1), uniform(0, 1), uniform(0, 1), 1});
     }
     BVH bvh(scene.circles);
 
@@ -250,14 +268,14 @@ int main() {
                 if (key->code == sf::Keyboard::Key::Escape) window.close();
         }
 
-        // TODO Q3: every frame, call update() on the scene and fullRefit() on the BVH.
-        // TODO Q4: rebuild the BVH with reset() instead of fullRefit().
+        scene.updateScene();
+        // bvh.fullRefit();
+
+        bvh.reset();
 
         for (int y = 0; y < gScreenHeight; ++y) {
             for (int x = 0; x < gScreenWidth; ++x) {
                 const sf::Vector2f pixel(static_cast<float>(x), static_cast<float>(y));
-                // TODO Q2: antialiasing. Take four samples at offsets of +-0.3333 from the pixel
-                // and average their colors.
                 std::vector<sf::Vector2f> offsets = {
                     {0.3333f, 0.3333f},
                     {0.3333f, -0.3333f},

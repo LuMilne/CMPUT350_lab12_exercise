@@ -1,5 +1,9 @@
 ﻿Q3. What happens to the bounding boxes with update + fullRefit?
+    The bounding boxes continue to redraw around the groups that were initially formed. 
+    The tree does not restructure itself when objects drift apart.
 
 Q4. What happens with reset (rebuild every frame) instead?
+    The tree is cleared of existing nodes and rebuilt based on the new conditions.
+    Circles that have drifted apart now group with closer circles.
 
 Q5. Why are some circles drawn with their sides cut off?
